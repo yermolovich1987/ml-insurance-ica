@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignore datasets folder to avoid pushing a lot of files, plus it could contain sensitive ones.
+datasets/
+
 # Distribution / packaging
 .Python
 build/
