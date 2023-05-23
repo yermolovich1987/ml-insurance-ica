@@ -4,7 +4,6 @@
 import constants
 
 # Public modules
-import datetime
 import os
 import pathlib
 import random
@@ -15,11 +14,17 @@ from PIL import Image
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 import tensorflow as tf
-from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
 
 def load_and_resize_image(img_path):
+    """
+    This method loads the image
+
+    :param img_path: path to the image to process
+    :return: resized images
+    """
+
     img_raw = tf.io.read_file(img_path)
     img = tf.image.decode_jpeg(img_raw, channels=constants.CHANNELS)
     img = tf.image.resize(img, constants.IMG_SIZE)
@@ -32,17 +37,21 @@ def get_file_paths_and_labels(data_root):
     class labels and mapping of class names to label index based on
     the provided data root directory.
 
-    Note! Currently supports only JPEG files!
+    Note! Currently, supports only JPEG files!
     """
 
     image_paths = sorted([str(path) for path in data_root.glob('*/*.jpg')])
     random.shuffle(image_paths)
 
-    label_names = sorted(item.name for item in data_root.glob('*/') if item.is_dir())
+    label_names = extract_label_names(data_root)
     label_to_index = dict((name, index) for index, name in enumerate(label_names))
     labels = [label_to_index[pathlib.Path(path).parent.name] for path in image_paths]
 
     return image_paths, labels, label_to_index
+
+
+def extract_label_names(data_root):
+    return sorted(item.name for item in data_root.glob('*/') if item.is_dir())
 
 
 def draw_document_samples(image_paths, labels, label_to_index):
@@ -148,7 +157,7 @@ def draw_confusion_matrix(y_true, y_pred, classes,
                     ha="center", va="center",
                     color="white" if cm[i, j] > thresh else "black")
     fig.tight_layout()
-    return ax
+    plt.show()
 
 
 def zip_datasets(images, labels):
@@ -207,9 +216,7 @@ def build_vgg16_tfidf_model():
     return model
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+def train_model(model_name):
     print('Version of terraform used: %s' % tf.__version__)
 
     print('===   Start processing')
@@ -221,8 +228,7 @@ def print_hi(name):
     tf.random.set_seed(0)
 
     # Check files in the dataset that will be used for Machine Learning
-    data_root = pathlib.Path('./datasets/claims_for_ica/train')
-    # text_root = pathlib.Path('../datasets/QS-OCR-small/')
+    data_root = pathlib.Path(constants.ORIGINAL_DATASET_PATH)
 
     print('===   List of folders in the dataset')
     for item in data_root.iterdir():
@@ -254,7 +260,7 @@ def print_hi(name):
     print('===   Model summary')
     model.summary()
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+    model.compile(optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=0.0001),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
@@ -281,11 +287,55 @@ def print_hi(name):
     predictions = model.predict(ds_test)
     predicted_labels = np.argmax(predictions, axis=1)
     print(
-        classification_report(expected_correct_test_labels, predicted_labels, target_names=list(label_to_index.keys()), digits=4))
+        classification_report(expected_correct_test_labels, predicted_labels, target_names=list(label_to_index.keys()),
+                              digits=4))
 
-    draw_confusion_matrix(expected_correct_test_labels, predicted_labels, classes=list(label_to_index.keys()), normalize=True, title="Evaluation on the test subset from original dataset.")
+    draw_confusion_matrix(expected_correct_test_labels, predicted_labels, classes=list(label_to_index.keys()),
+                          normalize=True, title="Evaluation on the test subset from original dataset.")
+
+    print('===   Storing the model')
+    model.save(model_name)
+    return model
 
 
-# Press the green button in the gutter to run the script.
+def classify_documents(source_dir, model):
+    image_paths = [str(path) for path in pathlib.Path(source_dir).glob('*.jpg')]
+    print('===   Images to classify %s' % image_paths)
+
+    dataset_to_classify = create_input_pipeline(
+        np.array(image_paths),
+        np.array(['Empty'] * len(image_paths)), len(image_paths), False)
+
+    predictions = model.predict(dataset_to_classify)
+
+    label_names = extract_label_names(pathlib.Path(constants.ORIGINAL_DATASET_PATH))
+
+    predicted_indexes = np.argmax(predictions, axis=1)
+    print('===   Predicted labels: ')
+    for index in predicted_indexes:
+        print(label_names[index])
+
+
+# The main entry of the program
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    # Check whether trained model is stored previously
+    is_store_model_existed = os.path.exists(constants.STORED_MODEL_FILE)
+    use_stored_model = False
+
+    # If stored model exists - ask user whether he wants to use it
+    if is_store_model_existed:
+        input_for_question = input('There is a stored model existed, would you like to use it? Print yes to proceed '
+                                   'with it, any other answer will be treated as no: ')
+        use_stored_model = input_for_question == 'yes'
+
+    if use_stored_model:
+
+        print('===   Loading stored model')
+        model = tf.keras.models.load_model(constants.STORED_MODEL_FILE)
+        model.summary()
+    else:
+        print('===   Training new model')
+        model = train_model(constants.STORED_MODEL_FILE)
+
+    location_of_files_to_read = input('Please, specify the folders with files to verify model work: ')
+    classify_documents(location_of_files_to_read, model)

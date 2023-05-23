@@ -8,6 +8,7 @@ __pycache__/
 
 # Ignore datasets folder to avoid pushing a lot of files, plus it could contain sensitive ones.
 datasets/
+saved_models/
 
 # Distribution / packaging
 .Python
