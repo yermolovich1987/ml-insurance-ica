@@ -239,9 +239,9 @@ def train_model(model_name):
     # TODO get labels amount dynamically instead of doing this statically.
     image_paths, labels, label_to_index = get_file_paths_and_labels(data_root)
     # TODO enable drawing of the documents.
-    # draw_document_samples(image_paths, labels, label_to_index)
+    draw_document_samples(image_paths, labels, label_to_index)
     print('===   Amount of images in the dataset: %s' % len(image_paths))
-    # draw_cound_by_category(labels, label_to_index)
+    draw_count_by_category(labels, label_to_index)
 
     # Creating the training, validation and testing datasets for the original dataset.
     ds_train = create_input_pipeline(image_paths[:constants.TRAIN_SIZE],
