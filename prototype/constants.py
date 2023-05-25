@@ -8,4 +8,4 @@ VAL_SIZE = 500
 
 ORIGINAL_DATASET_PATH = './datasets/claims_for_ica/train'
 STORED_MODEL_FILE = 'saved_models/trainedModel.h5'
-CLASSIFIED_DOCUMENTS_DIRECTORY = "classified_documents"
+CLASSIFIED_DOCUMENTS_DIRECTORY = "classified_documents/"

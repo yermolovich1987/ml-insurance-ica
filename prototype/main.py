@@ -7,6 +7,7 @@ import constants
 import os
 import pathlib
 import random
+import shutil
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -298,22 +299,33 @@ def train_model(model_name):
     return model
 
 
-def classify_documents(source_dir, model):
+def classify_documents(source_dir, trained_model):
     image_paths = [str(path) for path in pathlib.Path(source_dir).glob('*.jpg')]
     print('===   Images to classify %s' % image_paths)
 
+    # Create an empty label array just to reuse existed function for building dataset.
+    # It will not affect predictions and will not be used there.
     dataset_to_classify = create_input_pipeline(
         np.array(image_paths),
         np.array(['Empty'] * len(image_paths)), len(image_paths), False)
 
-    predictions = model.predict(dataset_to_classify)
+    predictions = trained_model.predict(dataset_to_classify)
 
+    # Extract label names from initial dataset. Keras and tensorflow do not allow to do this from the stored model.
     label_names = extract_label_names(pathlib.Path(constants.ORIGINAL_DATASET_PATH))
 
-    predicted_indexes = np.argmax(predictions, axis=1)
+    normalized_predictions = np.argmax(predictions, axis=1)
     print('===   Predicted labels: ')
-    for index in predicted_indexes:
-        print(label_names[index])
+    for index, prediction in enumerate(normalized_predictions):
+        predicted_label = label_names[prediction]
+        current_image = image_paths[index]
+        print(f"*   Image: {current_image}; predicted as {predicted_label}")
+        target_directory = constants.CLASSIFIED_DOCUMENTS_DIRECTORY + predicted_label + '/'
+
+        if not os.path.exists(target_directory):
+            os.makedirs(target_directory)
+
+        shutil.move(current_image, target_directory)
 
 
 # The main entry of the program
