@@ -79,30 +79,33 @@ def train_model(datasets_path, dataset_name):
 
     # Load image paths, labels and label to index mapping from the dataset.
     image_paths, labels, label_to_index = __get_file_paths_and_labels(data_root)
+    # Draw sample of the documents and distribution of the documents by classes.
     drawings.draw_document_samples(image_paths, labels, label_to_index)
-
-    total_amount_of_images = len(image_paths)
-    print('===   Total amount of images in the dataset: %s' % total_amount_of_images)
-    print('===   The size of the training subset: %s' % constants.TRAIN_SIZE)
-    print('===   The size of the validation subset: %s' % constants.VAL_SIZE)
-    print('===   The size of the testing subset: %s' % (
-            total_amount_of_images - constants.TRAIN_SIZE - constants.VAL_SIZE))
-
     drawings.draw_distribution_of_documents_per_class(labels, label_to_index)
+
+    # Calculate train, validation and test subsets size based on the preconfigured ratio
+    total_amount_of_images = len(image_paths)
+    train_size = int(total_amount_of_images * constants.TRAIN_RATIO)
+    validation_size = int(total_amount_of_images * constants.VALIDATION_RATIO)
+    test_size = total_amount_of_images - train_size - validation_size
+    print('===   Total amount of images in the dataset: %s' % total_amount_of_images)
+    print('===   The size of the training subset: %s' % train_size)
+    print('===   The size of the validation subset: %s' % validation_size)
+    print('===   The size of the testing subset: %s' % test_size)
 
     # Creating the training, validation and testing datasets for the original dataset.
     # Includes image preprocessing by resizing and applying VGG16 standard preprocessing.
-    ds_train = models.create_input_pipeline(image_paths[:constants.TRAIN_SIZE],
-                                            labels[:constants.TRAIN_SIZE], is_training=True)
-    ds_val = models.create_input_pipeline(image_paths[constants.TRAIN_SIZE: constants.TRAIN_SIZE + constants.VAL_SIZE],
-                                          labels[constants.TRAIN_SIZE: constants.TRAIN_SIZE + constants.VAL_SIZE],
+    ds_train = models.create_input_pipeline(image_paths[:train_size],
+                                            labels[:train_size], is_training=True)
+    ds_val = models.create_input_pipeline(image_paths[train_size: train_size + validation_size],
+                                          labels[train_size: train_size + validation_size],
                                           is_training=False)
-    ds_test = models.create_input_pipeline(image_paths[constants.TRAIN_SIZE + constants.VAL_SIZE:],
-                                           labels[constants.TRAIN_SIZE + constants.VAL_SIZE:],
+    ds_test = models.create_input_pipeline(image_paths[train_size + validation_size:],
+                                           labels[train_size + validation_size:],
                                            is_training=False)
 
     # Store the correct values of labels for test set. Will be used later for testing of the predictions.
-    expected_correct_test_labels = labels[constants.TRAIN_SIZE + constants.VAL_SIZE:]
+    expected_correct_test_labels = labels[train_size + validation_size:]
 
     # Build a model to be trained and print its summary
     model = models.build_vgg16_based_model(len(label_to_index.keys()))
@@ -119,7 +122,7 @@ def train_model(datasets_path, dataset_name):
 
     # Calculate the number of steps per epoch that will be used during model training based on the training array size
     # and batch size
-    steps_per_epoch = np.ceil(constants.TRAIN_SIZE / constants.BATCH_SIZE)
+    steps_per_epoch = np.ceil(train_size / constants.BATCH_SIZE)
     print('===   Calculated steps per epoch: %s' % steps_per_epoch)
 
     # Start training of the model.

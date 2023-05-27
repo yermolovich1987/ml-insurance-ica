@@ -2,11 +2,10 @@ BATCH_SIZE = 16
 # Size of the image.
 IMG_SIZE = [224, 224]
 CHANNELS = 3
-NUM_LABELS = 7
-# The size of the training dataset that will be used
-TRAIN_SIZE = 1000
-# The size of the validation dataset that will be used
-VAL_SIZE = 500
+# The ratio of the training data from original dataset, 1 represents 100%
+TRAIN_RATIO = 0.6
+# The ratio of the validation data from original dataset, 1 represents 100%
+VALIDATION_RATIO = 0.2
 
 # Path to the folder with datasets
 DATASETS_PATH = './datasets'

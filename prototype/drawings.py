@@ -1,5 +1,6 @@
 # This file contain the code responsible for drawing plots.
 
+import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn.metrics import confusion_matrix
