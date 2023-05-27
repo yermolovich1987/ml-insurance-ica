@@ -64,10 +64,12 @@ format is not used since it cause problems after loading of the module on the Ap
 If the trained model already exists, then the application will ask whether you would like to
 use a stored trained model, or train new model from the beginning.
 
-At the end of the running, the application will ask the location of the folder with
-document to classify. This could be useful for additional testing on custom images,
-or if the user want's to use already trained model to classify the documents simulating
-the real environment.
+At the end of the running, the application will ask the location of the folder with custom
+document images to classify. This could be useful for additional testing on custom images,
+or if the user wants to use already trained model to classify the documents simulating
+the real environment. The document in this case will be moved to the proper sub-folder that corresponds
+to the document clas inside the ```./classified_documents``` folder (the name of this folder could be changed 
+through CLASSIFIED_DOCUMENTS_DIRECTORY constant).
 
 The location of the dataset, location where to store trained model and other important training
 parameters are configured through the constants located in ```constants.py``` module.
