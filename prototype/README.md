@@ -22,7 +22,9 @@ predicted.
 
 The dataset that is supplied with the program (located in claims_for_ica.zip) is taken from the Roboflow site and then
 modified manually to suit the needs of this work. In particular, original classification where changed
-and documents were moved to the folders that describes the document classes.
+and documents were moved to the folders that describes the document classes. The dataset is not supplied with 
+the repository due to the big size of archive. More requirements to the dataset could be found in:
+https://github.com/yermolovich1987/ml-insurance-ica/blob/4827f2abf0c7877a2bf13d834f4b4d1e3f916833/prototype/datasets/README.md
 
 Reference to the original dataset:
 
@@ -68,7 +70,7 @@ At the end of the running, the application will ask the location of the folder w
 document images to classify. This could be useful for additional testing on custom images,
 or if the user wants to use already trained model to classify the documents simulating
 the real environment. The document in this case will be moved to the proper sub-folder that corresponds
-to the document clas inside the ```./classified_documents``` folder (the name of this folder could be changed 
+to the document clas inside the ```.../prototype/classified_documents``` folder (the name of this folder could be changed 
 through CLASSIFIED_DOCUMENTS_DIRECTORY constant).
 
 The location of the dataset, location where to store trained model and other important training
