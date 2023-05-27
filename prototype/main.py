@@ -10,13 +10,14 @@ import os
 import pathlib
 import random
 import shutil
+import zipfile
 
 import numpy as np
 from sklearn.metrics import classification_report
 import tensorflow as tf
 
 
-def get_file_paths_and_labels(data_root):
+def __get_file_paths_and_labels(data_root):
     """
     Method returns a list of paths to images, corresponding
     class labels and mapping of class names to label index based on
@@ -28,14 +29,14 @@ def get_file_paths_and_labels(data_root):
     image_paths = sorted([str(path) for path in data_root.glob('*/*.jpg')])
     random.shuffle(image_paths)
 
-    label_names = extract_label_names(data_root)
+    label_names = __extract_label_names(data_root)
     label_to_index = dict((name, index) for index, name in enumerate(label_names))
     labels = [label_to_index[pathlib.Path(path).parent.name] for path in image_paths]
 
     return image_paths, labels, label_to_index
 
 
-def extract_label_names(data_root):
+def __extract_label_names(data_root):
     """
     Extracts sorted list of label names from original dataset.
     """
@@ -43,35 +44,50 @@ def extract_label_names(data_root):
     return sorted(item.name for item in data_root.glob('*/') if item.is_dir())
 
 
-def train_model(path_to_store_model):
+def train_model(datasets_path, dataset_name):
     """
-    Trains the new model from the beginning and stored it to the provided path.
+    Trains the new model from the beginning.
 
-    :param path_to_store_model: the path where to store model after training
+    :param datasets_path: the path to the folder where all datasets are located
+    :param dataset_name: the name of the folder with dataset to use
     :return: trained model
     """
 
     print('Version of terraform used: %s' % tf.__version__)
-
-    print('===   Start processing')
 
     # Reset the seeds so the random numbers will be the same every time.
     random.seed(0)
     np.random.seed(0)
     tf.random.set_seed(0)
 
+    # check whether extracted dataset from archive exists, if no - extract the files for further processing
+    dataset_folder = os.path.join(datasets_path, dataset_name)
+    is_dataset_folder_existed = os.path.exists(dataset_folder)
+    if not is_dataset_folder_existed:
+        print("===   No extracted files found, so start the process from extraction from archive")
+        with zipfile.ZipFile(os.path.join(dataset_folder + '.zip')) as archive:
+            for file in archive.namelist():
+                archive.extract(file, datasets_path)
+
+    print('===   Start training process')
     # Check files in the dataset that will be used for Machine Learning
-    data_root = pathlib.Path(constants.ORIGINAL_DATASET_PATH)
+    data_root = pathlib.Path(dataset_folder)
 
     print('===   List of folders in the dataset')
     for item in data_root.iterdir():
         print(item)
 
     # Load image paths, labels and label to index mapping from the dataset.
-    # TODO get labels amount dynamically instead of doing this statically.
-    image_paths, labels, label_to_index = get_file_paths_and_labels(data_root)
+    image_paths, labels, label_to_index = __get_file_paths_and_labels(data_root)
     drawings.draw_document_samples(image_paths, labels, label_to_index)
-    print('===   Amount of images in the dataset: %s' % len(image_paths))
+
+    total_amount_of_images = len(image_paths)
+    print('===   Total amount of images in the dataset: %s' % total_amount_of_images)
+    print('===   The size of the training subset: %s' % constants.TRAIN_SIZE)
+    print('===   The size of the validation subset: %s' % constants.VAL_SIZE)
+    print('===   The size of the testing subset: %s' % (
+            total_amount_of_images - constants.TRAIN_SIZE - constants.VAL_SIZE))
+
     drawings.draw_distribution_of_documents_per_class(labels, label_to_index)
 
     # Creating the training, validation and testing datasets for the original dataset.
@@ -89,7 +105,7 @@ def train_model(path_to_store_model):
     expected_correct_test_labels = labels[constants.TRAIN_SIZE + constants.VAL_SIZE:]
 
     # Build a model to be trained and print its summary
-    model = models.build_vgg16_based_model()
+    model = models.build_vgg16_based_model(len(label_to_index.keys()))
     print('===   Model summary')
     model.summary()
 
@@ -133,8 +149,6 @@ def train_model(path_to_store_model):
     drawings.draw_confusion_matrix(expected_correct_test_labels, predicted_labels, classes=list(label_to_index.keys()),
                                    normalize=True, title="Evaluation on the test subset from original dataset.")
 
-    print('===   Storing the model')
-    model.save(path_to_store_model)
     return model
 
 
@@ -168,7 +182,7 @@ def classify_documents(source_dir, trained_model):
 
     # Extract label names from initial dataset. Keras and Tensorflow do not allow to extract label names
     # from the stored model.
-    label_names = extract_label_names(pathlib.Path(constants.ORIGINAL_DATASET_PATH))
+    label_names = __extract_label_names(pathlib.Path(os.path.join(constants.DATASETS_PATH, constants.DATASET_TO_TRAIN)))
 
     # Print the predicted labels for each document to console and move file to the corresponding folder.
     normalized_predictions = np.argmax(predictions, axis=1)
@@ -177,7 +191,7 @@ def classify_documents(source_dir, trained_model):
         predicted_label = label_names[prediction]
         current_image = image_paths[index]
         print(f"*   Image: {current_image}; predicted as {predicted_label}")
-        target_directory = constants.CLASSIFIED_DOCUMENTS_DIRECTORY + predicted_label + '/'
+        target_directory = os.path.join(constants.CLASSIFIED_DOCUMENTS_DIRECTORY, predicted_label)
 
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
@@ -205,7 +219,9 @@ if __name__ == '__main__':
     # If no, start the process of model training from the beginning
     else:
         print('===   Training new model')
-        model = train_model(constants.STORED_MODEL_FILE)
+        model = train_model(constants.DATASETS_PATH, constants.DATASET_TO_TRAIN)
+        print('===   Storing the trained model')
+        model.save(constants.STORED_MODEL_FILE)
 
     # Provide a chance for the user to classify additional documents from the particular folder.
     location_of_files_to_read = input('Please, specify the absolute path to the folders with files to classify: ')

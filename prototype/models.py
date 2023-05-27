@@ -29,11 +29,17 @@ def __zip_datasets(images, labels):
 def create_input_pipeline(image_paths, labels,
                           batch_size=constants.BATCH_SIZE, is_training=False):
     """
-    Create a tf.data.Dataset pipeline from the given file paths and labels.
+    Creates a tf.data.Dataset pipeline from the given file paths and labels.
     The pipeline includes image preprocessing, batching and creates a zipped
     dataset that feeds both images and text to the input layer.
     If `is_train==True` the dataset also gets shuffle and repeated for being
     used as training input.
+
+    :param image_paths: an array of paths to images
+    :param labels: an array of labels that corresponds to the images
+    :param batch_size: the batch size of resulted dataset
+    :param is_training: the flag that determines whether dataset is training or not
+    :return: zipped dataset of images and their labels
     """
     image_ds = tf.data.Dataset.from_tensor_slices(image_paths)
     image_ds = image_ds.map(__load_and_resize_image).map(preprocess_input)
@@ -49,11 +55,12 @@ def create_input_pipeline(image_paths, labels,
     return ds
 
 
-def build_vgg16_based_model():
+def build_vgg16_based_model(number_of_classes):
     """
     Builds a keras.Model consisting of a pretrained VGG16 network with additional Input layer before it and multiple
     additional output layers after it - GlobalAveragePooling2D, BatchNormalization and Dense.
 
+    :param number_of_classes: number of output classes/labels to predict
     :return: created CNN model
     """
 
@@ -71,7 +78,7 @@ def build_vgg16_based_model():
 
     # At the end apply batch normalization and dense layers
     batch_normalization_layer = tf.keras.layers.BatchNormalization(momentum=0.9)(image_model)
-    output = tf.keras.layers.Dense(constants.NUM_LABELS, activation='softmax')(batch_normalization_layer)
+    output = tf.keras.layers.Dense(number_of_classes, activation='softmax')(batch_normalization_layer)
 
     model = tf.keras.Model(inputs=[image_input], outputs=output)
 
