@@ -64,7 +64,11 @@ def train_model(datasets_path, dataset_name):
     dataset_folder = os.path.join(datasets_path, dataset_name)
     is_dataset_folder_existed = os.path.exists(dataset_folder)
     if not is_dataset_folder_existed:
-        print("===   No extracted files found, so start the process from extraction from archive")
+        print('===   Dataset folder not found, so trying to extract files from archive')
+        archive_path = dataset_folder + '.zip'
+        if not os.path.exists(archive_path):
+            print('===   Archive is not found too, stop processing')
+            return None
         with zipfile.ZipFile(os.path.join(dataset_folder + '.zip')) as archive:
             for file in archive.namelist():
                 archive.extract(file, datasets_path)
@@ -223,6 +227,8 @@ if __name__ == '__main__':
     else:
         print('===   Training new model')
         model = train_model(constants.DATASETS_PATH, constants.DATASET_TO_TRAIN)
+        if model is None:
+            raise Exception('No model were trained, please check console logs for more details!')
         print('===   Storing the trained model')
         model.save(constants.STORED_MODEL_FILE)
 
