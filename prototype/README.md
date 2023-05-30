@@ -21,13 +21,14 @@ This versions were tested both on MacBook Pro M1 and on old Windows machine.
 
 The application expects the dataset represented by document images in jpeg format
 pre-classified by different folders. Name of the folder describes the class to be
-predicted.
+predicted. The folder where dataset should be located is ```.../prototype/datasets```.
+More requirements to the dataset could be found in:
+https://github.com/yermolovich1987/ml-insurance-ica/blob/main/prototype/datasets/README.md
 
 The dataset that was used to test the program (located in claims_for_ica.zip) is taken from the Roboflow site and then
 modified manually to suit the needs of this work. In particular, original classification where changed
 and documents were moved to the folders that describes the document classes. The dataset is not supplied with 
-the code due to the big size of archive. More requirements to the dataset could be found in:
-https://github.com/yermolovich1987/ml-insurance-ica/blob/main/prototype/datasets/README.md
+the code due to the big size of archive. 
 
 The dataset archive could be downloaded via the link:
 TODO Add link

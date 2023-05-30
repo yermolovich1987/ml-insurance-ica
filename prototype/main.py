@@ -67,7 +67,8 @@ def train_model(datasets_path, dataset_name):
         print('===   Dataset folder not found, so trying to extract files from archive')
         archive_path = dataset_folder + '.zip'
         if not os.path.exists(archive_path):
-            print('===   Archive is not found too, stop processing')
+            print('===   Archive is not found too, stop processing. '
+                  'Please, add dataset with name %s to the datasets folder' % dataset_name)
             return None
         with zipfile.ZipFile(os.path.join(dataset_folder + '.zip')) as archive:
             for file in archive.namelist():
